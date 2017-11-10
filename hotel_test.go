@@ -1,5 +1,9 @@
 package main
 
+/*"net/http"
+"strings"
+"io/ioutil"	*/
+
 import (
 	"encoding/json"
 	"fmt"
@@ -7,9 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	/* "net/http"
-	"strings"
-	"io/ioutil"	*/)
+)
 
 func Test1(t *testing.T) {
 	expected := "udeain"
