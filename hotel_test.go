@@ -6,11 +6,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	//"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	//"reflect"
+	"bytes"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -92,7 +95,7 @@ func Test2(t *testing.T) {
 
 }
 
-func Test3(t *testing.T) {
+func TestPuerto(t *testing.T) {
 	// prueba de puerto de comunicación
 	puerto := os.Getenv("PORT")
 	fmt.Println("Puerto: " + puerto)
@@ -104,7 +107,7 @@ func Test3(t *testing.T) {
 }
 
 // pruebas de conexión y respuestas HTTP
-func Test4(t *testing.T) {
+func TestHTTP(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	checkError(err, t)
 
@@ -147,5 +150,99 @@ func Test4(t *testing.T) {
 	}
 
 	//fmt.Println(rr.Body.String())
+
+}
+
+// Prueba de procesamiento de fechas en formato especificado
+func TestFechas(t *testing.T) {
+
+	date := "2017-11-05"
+	dateObj := splitDate(date)
+	fecha_esperada := "2017"
+	//fmt.Println(dateObj["year"])
+
+	// prueba de año
+	if dateObj["year"] != fecha_esperada {
+		t.Errorf("Test Fallido: Formato de fecha incorrecto. Año esperado %s y Obtenido %s ", fecha_esperada, dateObj["year"])
+	}
+
+	// prueba de mes
+	fecha_esperada = "11"
+	if dateObj["month"] != fecha_esperada {
+		t.Errorf("Test Fallido: Formato de fecha incorrecto. Mes esperado %s y Obtenido %s ", fecha_esperada, dateObj["month"])
+	}
+
+	// prueba de día
+	fecha_esperada = "05"
+	if dateObj["day"] != fecha_esperada {
+		t.Errorf("Test Fallido: Formato de fecha incorrecto. Día esperado %s y Obtenido %s ", fecha_esperada, dateObj["day"])
+	}
+}
+
+func TestEstructuras(t *testing.T) {
+	room := Room{Hotel_id: "udeain_medellin", Hotel_name: "Udea IN", Hotel_thumbnail: "N/A", check_in: "11:00 am"}
+
+	if room.Hotel_id != "udeain_medellin" {
+		t.Errorf("Test Fallido: Datos en estructura distintos a los especificados. Esperado %s y Obtenido %s ", room.Hotel_id, "udeain_medellin")
+	}
+}
+
+func TestReserva(t *testing.T) {
+
+	form := url.Values{
+		"arrive_date": {"2017-11-26"},
+		"leave_date":  {"2017-11-27"},
+		"room_type":   {"l"},
+		"capacity":    {"1"},
+		"hotel_id":    {"udeain_medellin"},
+		/*"beds":        {"simple": {"1"}, "double": {"0"}},
+		"user":        {"doc_type": {"Ccu"}, "doc_id": {"11521777"}, "email": {"cjmo@gmail.com"}, "phone_number": {"4448787"}},*/
+	}
+	body_request := bytes.NewBufferString(form.Encode())
+
+	resp, err := http.Post("https://udeain.herokuapp.com/api/v1/rooms/reserve", "application/json", body_request)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	// obtener mensaje de respuesta para solicitud de reserva
+	var raw map[string]interface{}
+	json.Unmarshal(body, &raw)
+	salida, _ := json.Marshal(raw["message"])
+	mensaje := string(salida)
+	mensaje = strings.Replace(mensaje, "\"", "", -1)
+	valor_esperado := "No hay habitaciones disponibles para el rango de fechas especificado, intente de nuevo"
+
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+
+	//fmt.Println(string(salida))
+	if mensaje != valor_esperado {
+		t.Errorf("Test Fallido: Mensaje de respuesta para reserva erróneo. Esperado: %s y Obtenido: %s ", valor_esperado, mensaje)
+	} else {
+		fmt.Println("Test de Mensaje de respuesta para reserva aprobado")
+	}
+
+	reader := strings.NewReader("")
+	req, _ := http.NewRequest("POST", "/api/v1/rooms/reserve", reader)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// probar código de respuesta
+	if w.Code != 200 {
+		t.Errorf("Test Fallido: Código de respuesta HTTP para reservas erróneo. Esperado: %d y Obtenido: %d ", 200, w.Code)
+	} else {
+		fmt.Println("Test de Código de respuesta HTTP para reservas aprobado")
+	}
+
+	resp = w.Result()
+	body, _ = ioutil.ReadAll(resp.Body)
+	//fmt.Println(string(body))
+	//fmt.Println(resp.StatusCode)
+	//fmt.Println(resp.Header.Get("Content-Type"))
+
+}
+
+func TestPublish(t *testing.T) {
 
 }
