@@ -242,7 +242,3 @@ func TestReserva(t *testing.T) {
 	//fmt.Println(resp.Header.Get("Content-Type"))
 
 }
-
-func TestPublish(t *testing.T) {
-
-}
