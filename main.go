@@ -366,7 +366,10 @@ func getRoomsAvailable(w http.ResponseWriter, r *http.Request) {
 }
 
 func getReservationRequest(w http.ResponseWriter, r *http.Request) {
-
+	decoded := context.Get(r, "decoded")
+	var userJwt User
+	mapstructure.Decode(decoded.(jwt.MapClaims), &userJwt)
+	userId := userJwt.Username
 	// establecer conexión con Base de Datos
 	session, err := mgo.Dial("mongodb://udeain:udeainmongodb@ds157444.mlab.com:57444/heroku_4r2js6cs")
 	if err != nil {
@@ -510,7 +513,8 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 
 	// guardar datos de reserva
 	id_reserva := bson.NewObjectId().Hex()
-	collection.Insert(bson.M{"_id": id_reserva, "start_date": arrive_date, "end_date": leave_date, "state": "awaiting", "host_id": "0045123", "hotel_id": hotel_id,
+	
+	collection.Insert(bson.M{"userId":userId, "_id": id_reserva, "start_date": arrive_date, "end_date": leave_date, "state": "awaiting", "host_id": "0045123", "hotel_id": hotel_id,
 		"room_type": room_type, "capacity": capacity_number, "beds_double": beds_double, "beds_simple": beds_simple, "doc_type": doc_type, "doc_id": doc_id,
 		"email": email, "phone_number": phone_number, "room_id": room_id})
 	println("ID reserva generada: " + id_reserva)
@@ -535,7 +539,7 @@ func main() {
 	//r.HandleFunc("/api/v1/rooms/arrive_date/{arriveDate}/leave_date/{leaveDate}/city/{city}/hosts/{hosts}/room_type/{roomType}", getRooms).Methods("GET")
 	r.HandleFunc("/api/v1/rooms", getRooms).Methods("GET")
 	r.HandleFunc("/api/v1/rooms_info", getRoomsAvailable).Methods("GET")
-	r.HandleFunc("/api/v1/rooms/reserve", getReservationRequest).Methods("POST")
+	r.HandleFunc("/api/v1/rooms/reserve", ValidateMiddleware(getReservationRequest)).Methods("POST")
 
 	r.HandleFunc("/authenticate", CreateTokenEndpoint).Methods("POST")
 	r.HandleFunc("/protected", ProtectedEndpoint).Methods("GET")
