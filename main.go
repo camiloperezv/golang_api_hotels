@@ -16,7 +16,21 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	// // Firebase sdk
+	// firebase "firebase.google.com/go"
+	// context "golang.org/x/net/context"
+	// "google.golang.org/api/option"
+
+	firebase "github.com/wuman/firebase-server-sdk-go"
 )
+
+// var opt = option.WithCredentialsFile("firebaseAdminCredentials.json")
+// var app, err = firebase.NewApp(context2.Background(), nil, opt)
+
+// // if err != nil {
+// //   return nil, fmt.Errorf("error initializing app: %v", err)
+// // }
 
 type Room struct {
 	Hotel_id        string `json:"hotel_id"`
@@ -45,17 +59,56 @@ type Exception struct {
 }
 
 func CreateTokenEndpoint(w http.ResponseWriter, req *http.Request) {
-	var user User
-	_ = json.NewDecoder(req.Body).Decode(&user)
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": user.Username,
-		"password": user.Password,
-	})
-	tokenString, error := token.SignedString([]byte("secret"))
-	if error != nil {
-		fmt.Println(error)
+	// var user User
+	// _ = json.NewDecoder(req.Body).Decode(&user)
+	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+	// 	"username": user.Username,
+	// 	"password": user.Password,
+	// })
+	// tokenString, error := token.SignedString([]byte("secret"))
+	// if error != nil {
+	// 	fmt.Println(error)
+	// }
+	// json.NewEncoder(w).Encode(JwtToken{Token: tokenString})
+
+	auth, _ := firebase.GetAuth()
+	token, err := auth.CreateCustomToken("FJNWvK2wbrhA2XHhWSQuiLVVFHp2", nil)
+	if err != nil {
+		fmt.Println(err)
 	}
-	json.NewEncoder(w).Encode(JwtToken{Token: tokenString})
+	json.NewEncoder(w).Encode(JwtToken{Token: token})
+
+	// opt := option.WithCredentialsFile("firebaseAdminCredentials.json")
+	// app, err := firebase.NewApp(context2.Background(), nil, opt)
+
+	// client, err := app.Auth()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error getting Auth client: %v", err)
+	// }
+
+	// token, err := client.VerifyIDToken("")
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error verifying ID token: %v", err)
+	// }
+
+	// fmt.Printf("Verified ID token: %v\n", token)
+
+	// client, err := app.Auth()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// claims := map[string]interface{}{
+	// 	"package": "gold",
+	// }
+	// token, err := client.CustomToken("",)
+	// token, err := client.CustomToken("",)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error creando la token", err)
+	// }
+
+	// json.NewEncoder(w).Encode(JwtToken{Token: token})
+
 }
 
 func ProtectedEndpoint(w http.ResponseWriter, req *http.Request) {
@@ -81,19 +134,16 @@ func ValidateMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if authorizationHeader != "" {
 			bearerToken := strings.Split(authorizationHeader, " ")
 			if len(bearerToken) == 2 {
-				token, error := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
-					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-						return nil, fmt.Errorf("There was an error")
-					}
-					return []byte("secret"), nil
-				})
-				if error != nil {
-					json.NewEncoder(w).Encode(Exception{Message: error.Error()})
-					return
-				}
-				if token.Valid {
-					context.Set(req, "decoded", token.Claims)
+				auth, _ := firebase.GetAuth()
+				decodedToken, err := auth.VerifyIDToken(bearerToken[1])
+				// println("hola")
+				if err == nil {
+					uid, found := decodedToken.UID()
+					println("uid", uid)
+					println("found", found)
+					context.Set(req, "decoded", uid)
 					next(w, req)
+
 				} else {
 					json.NewEncoder(w).Encode(Exception{Message: "Invalid authorization token"})
 				}
@@ -102,13 +152,63 @@ func ValidateMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			json.NewEncoder(w).Encode(Exception{Message: "An authorization header is required"})
 		}
 	})
+
+	// return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	// 	authorizationHeader := req.Header.Get("authorization")
+	// 	if authorizationHeader != "" {
+	// 		bearerToken := strings.Split(authorizationHeader, " ")
+	// 		if len(bearerToken) == 2 {
+
+	// 			// auth, _ := firebase.GetAuth()
+	// 			// decodedToken, err := auth.VerifyIDToken(bearerToken[1])
+	// 			// if err != nil {
+	// 			// 	json.NewEncoder(w).Encode(Exception{Message: "Invalid authorization token"})
+	// 			// }
+
+	// 			// uid, found := decodedToken.UID()
+	// 			// context.Set(req, "decoded", uid)
+	// 			// context.Set(req, "FOUND", found)
+	// 			// next(w, req)
+
+	// 			// println("decoded", decodedToken)
+
+	// 			// auth, _ := firebase.GetAuth()
+	// 			// decodedToken, err := auth.VerifyIDToken(idTokenString)
+	// 			// if err == nil {
+	// 			// 	uid, found := decodedToken.Uid()
+	// 			// 	next(w, req)
+	// 			// }
+
+	// 			// token, error := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+	// 			// 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 			// 		return nil, fmt.Errorf("There was an error")
+	// 			// 	}
+	// 			// 	return []byte(""), nil
+	// 			// })
+	// 			// println(token.Claims)
+	// 			// if error != nil {
+	// 			// 	json.NewEncoder(w).Encode(Exception{Message: error.Error()})
+	// 			// 	return
+	// 			// }
+	// 			// if token.Valid {
+	// 			// 	context.Set(req, "decoded", token.Claims)
+	// 			// 	next(w, req)
+	// 			// } else {
+	// 			// 	json.NewEncoder(w).Encode(Exception{Message: "Invalid authorization token"})
+	// 			// }
+	// 		}
+	// 	} else {
+	// 		json.NewEncoder(w).Encode(Exception{Message: "An authorization header is required"})
+	// 	}
+	// })
 }
 
 func TestEndpoint(w http.ResponseWriter, req *http.Request) {
 	decoded := context.Get(req, "decoded")
-	var user User
-	mapstructure.Decode(decoded.(jwt.MapClaims), &user)
-	json.NewEncoder(w).Encode(user)
+	// // var user User
+	// mapstructure.Decode(decoded.(jwt.MapClaims), &user)
+	// json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(decoded)
 }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
@@ -513,8 +613,8 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 
 	// guardar datos de reserva
 	id_reserva := bson.NewObjectId().Hex()
-	
-	collection.Insert(bson.M{"userId":userId, "_id": id_reserva, "start_date": arrive_date, "end_date": leave_date, "state": "awaiting", "host_id": "0045123", "hotel_id": hotel_id,
+
+	collection.Insert(bson.M{"userId": userId, "_id": id_reserva, "start_date": arrive_date, "end_date": leave_date, "state": "awaiting", "host_id": "0045123", "hotel_id": hotel_id,
 		"room_type": room_type, "capacity": capacity_number, "beds_double": beds_double, "beds_simple": beds_simple, "doc_type": doc_type, "doc_id": doc_id,
 		"email": email, "phone_number": phone_number, "room_id": room_id})
 	println("ID reserva generada: " + id_reserva)
@@ -533,6 +633,17 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 //http://localhost:8080/api/v1/rooms/arrive_date/01-01-2017/leave_date/02-02-2017/city/05001/hosts/3/room_type/l
 func main() {
 	fmt.Println("start server 8080")
+	// opt := option.WithCredentialsFile("firebaseAdminCredentials.json")
+	// app, err := firebase.NewApp(context.Background(), nil, opt)
+
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error inicializando la aplicación", err)
+	// }
+
+	firebase.InitializeApp(&firebase.Options{
+		ServiceAccountPath: "firebaseAdminCredentials.json",
+	})
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler).Methods("GET")
 
