@@ -59,17 +59,6 @@ type Exception struct {
 }
 
 func CreateTokenEndpoint(w http.ResponseWriter, req *http.Request) {
-	// var user User
-	// _ = json.NewDecoder(req.Body).Decode(&user)
-	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-	// 	"username": user.Username,
-	// 	"password": user.Password,
-	// })
-	// tokenString, error := token.SignedString([]byte("secret"))
-	// if error != nil {
-	// 	fmt.Println(error)
-	// }
-	// json.NewEncoder(w).Encode(JwtToken{Token: tokenString})
 
 	auth, _ := firebase.GetAuth()
 	token, err := auth.CreateCustomToken("FJNWvK2wbrhA2XHhWSQuiLVVFHp2", nil)
@@ -77,38 +66,6 @@ func CreateTokenEndpoint(w http.ResponseWriter, req *http.Request) {
 		fmt.Println(err)
 	}
 	json.NewEncoder(w).Encode(JwtToken{Token: token})
-
-	// opt := option.WithCredentialsFile("firebaseAdminCredentials.json")
-	// app, err := firebase.NewApp(context2.Background(), nil, opt)
-
-	// client, err := app.Auth()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("error getting Auth client: %v", err)
-	// }
-
-	// token, err := client.VerifyIDToken("")
-	// if err != nil {
-	// 	return nil, fmt.Errorf("error verifying ID token: %v", err)
-	// }
-
-	// fmt.Printf("Verified ID token: %v\n", token)
-
-	// client, err := app.Auth()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// claims := map[string]interface{}{
-	// 	"package": "gold",
-	// }
-	// token, err := client.CustomToken("",)
-	// token, err := client.CustomToken("",)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("error creando la token", err)
-	// }
-
-	// json.NewEncoder(w).Encode(JwtToken{Token: token})
-
 }
 
 func ProtectedEndpoint(w http.ResponseWriter, req *http.Request) {
@@ -142,6 +99,7 @@ func ValidateMiddleware(next http.HandlerFunc) http.HandlerFunc {
 					println("uid", uid)
 					println("found", found)
 					context.Set(req, "decoded", uid)
+					context.Set(req, "uid", uid)
 					next(w, req)
 
 				} else {
@@ -418,10 +376,12 @@ func getRoomsAvailable(w http.ResponseWriter, r *http.Request) {
 }
 
 func getReservationRequest(w http.ResponseWriter, r *http.Request) {
-	decoded := context.Get(r, "decoded")
-	var userJwt User
-	mapstructure.Decode(decoded.(jwt.MapClaims), &userJwt)
-	userId := userJwt.Username
+	// decoded := context.Get(r, "decoded")
+	// var userJwt User
+	// mapstructure.Decode(decoded.(jwt.MapClaims), &userJwt)
+	// userId := userJwt.Username
+
+	userId := context.Get(r, "uid")
 	// establecer conexión con Base de Datos
 	session, err := mgo.Dial("mongodb://udeain:udeainmongodb@ds157444.mlab.com:57444/heroku_4r2js6cs")
 	if err != nil {
