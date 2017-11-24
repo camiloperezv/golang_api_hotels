@@ -424,11 +424,26 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var room_thumbnail string
+	var room_price string
+	var room_description string
+	if( room_type == "S" ){
+		room_thumbnail = "https://media-cdn.tripadvisor.com/media/photo-s/01/64/a2/f3/simple-but-very-clean.jpg"
+		room_price = "$65,000"
+		room_description = "Habitación sencilla con una cama, TV satelital y baño"
+	}else{
+		room_thumbnail = "http://shoise.com/wp-content/uploads/2017/01/impressive-simple-room-pictures-inside-unique.jpg"
+		room_price = "$130,000"
+		room_description = "Habitación doble con dos camas, TV satelital, sofá, mesa de noche y baño"
+	}
+
 	// guardar datos de reserva
 	id_reserva := bson.NewObjectId().Hex()
-	collection.Insert(bson.M{"_id": id_reserva, "start_date": arrive_date, "end_date": leave_date, "state": "A", "host_id": "0045123", "hotel_id": hotel_id,
-		"room_type": room_type, "capacity": capacity_number, "beds_double": beds_double, "beds_simple": beds_simple, "doc_type": doc_type, "doc_id": doc_id,
-		"email": email, "phone_number": phone_number, "room_id": room_id})
+	collection.Insert(bson.M{"reserve_id": id_reserva, "_id": id_reserva, "arrive_date": arrive_date, "leave_date": leave_date, "state": "A", "host_id": "0045123", "hotel_id": hotel_id,
+		/*"beds_double": beds_double, "beds_simple": beds_simple,*/ "doc_type": doc_type, "doc_id": doc_id,
+		"email": email, "phone_number": phone_number, "room_id": room_id,
+		"room" : bson.M{  "room_thumbnail": room_thumbnail, "room_price": room_price, "description": room_description, "currency": "COP", "room_type": room_type, "capacity": capacity_number,"beds": bson.M{"simple": beds_simple, "double": beds_double} },
+	})
 	println("ID reserva generada: " + id_reserva)
 
 	// retornar respuesta de reserva gestionada
