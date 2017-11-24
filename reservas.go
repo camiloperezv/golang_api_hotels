@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 	//"github.com/gorilla/mux"
 	//"os"
 	"encoding/json"
@@ -10,9 +10,67 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	//"io/ioutil"	
 	//"strconv"
-	//"strings"
+	"strings"
 	"net/http"
+	firebase "github.com/wuman/firebase-server-sdk-go"
+	"github.com/gorilla/context"
 )
+
+type JwtToken struct {
+	Token string `json:"token"`
+}
+
+type Exception struct {
+	Message string `json:"message"`
+}
+
+func CreateTokenEndpoint(w http.ResponseWriter, req *http.Request) {
+
+	auth, _ := firebase.GetAuth()
+	token, err := auth.CreateCustomToken("FJNWvK2wbrhA2XHhWSQuiLVVFHp2", nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+	json.NewEncoder(w).Encode(JwtToken{Token: token})
+}
+
+func ValidateMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			authorizationHeader := req.Header.Get("authorization")
+			if authorizationHeader != "" {
+				bearerToken := strings.Split(authorizationHeader, " ")
+				if len(bearerToken) == 2 {
+					auth, _ := firebase.GetAuth()
+					decodedToken, err := auth.VerifyIDToken(bearerToken[1])
+					// uid, found := decodedToken.UID()
+					// println("uid", uid)
+					// println("found", found)
+					if err == nil {
+						uid, found := decodedToken.UID()
+						println("uid", uid)
+						println("found", found)
+						// context.Set(req, "decoded", uid)
+						context.Set(req, "uid", uid)
+						next(w, req)
+					} else {
+						fmt.Println(err)
+						json.NewEncoder(w).Encode(Exception{Message: "Invalid token"})
+					}
+				}
+			} else {
+				json.NewEncoder(w).Encode(Exception{Message: "An authorization header is required"})
+			}
+		})
+	}
+	
+	func TestEndpoint(w http.ResponseWriter, req *http.Request) {
+		decoded := context.Get(req, "decoded")
+		// // var user User
+		// mapstructure.Decode(decoded.(jwt.MapClaims), &user)
+		// json.NewEncoder(w).Encode(user)
+		json.NewEncoder(w).Encode(decoded)
+	}
 
 func getReservations(w http.ResponseWriter, r *http.Request){
 
