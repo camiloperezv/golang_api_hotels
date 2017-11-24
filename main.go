@@ -6,7 +6,9 @@ import (
 	"os"
 	// "log"
 	"encoding/json"
+	"github.com/gorilla/context"
 	"github.com/gorilla/handlers"
+	firebase "github.com/wuman/firebase-server-sdk-go"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
@@ -42,6 +44,47 @@ func splitDate(date string) (retDate map[string]string) {
 	}
 	return
 }
+
+// func CreateTokenEndpoint(w http.ResponseWriter, req *http.Request) {
+
+// 	auth, _ := firebase.GetAuth()
+// 	token, err := auth.CreateCustomToken("FJNWvK2wbrhA2XHhWSQuiLVVFHp2", nil)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
+// 	json.NewEncoder(w).Encode(JwtToken{Token: token})
+// }
+
+func ValidateMiddleware(next http.HandlerFunc) http.HandlerFunc {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		authorizationHeader := req.Header.Get("authorization")
+		if authorizationHeader != "" {
+			bearerToken := strings.Split(authorizationHeader, " ")
+			if len(bearerToken) == 2 {
+				auth, _ := firebase.GetAuth()
+				decodedToken, err := auth.VerifyIDToken(bearerToken[1])
+				// uid, found := decodedToken.UID()
+				// println("uid", uid)
+				// println("found", found)
+				if err == nil {
+					uid, found := decodedToken.UID()
+					// println("uid", uid)
+					println("found", found)
+					// context.Set(req, "decoded", uid)
+					context.Set(req, "decoded", uid)
+					next(w, req)
+				} else {
+					fmt.Println(err)
+					json.NewEncoder(w).Encode(Exception{Message: "Invalid token"})
+				}
+			}
+		} else {
+			json.NewEncoder(w).Encode(Exception{Message: "An authorization header is required"})
+		}
+	})
+}
+
 func getRooms(w http.ResponseWriter, r *http.Request) {
 
 	/*
@@ -297,7 +340,7 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 
 	// Recibir datos Json enviados en solicitud POST
 	jsonDatos, err := ioutil.ReadAll(r.Body)
-	
+
 	if err != nil {
 		panic(err)
 	}
@@ -427,11 +470,11 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 	var room_thumbnail string
 	var room_price string
 	var room_description string
-	if( room_type == "S" ){
+	if room_type == "S" {
 		room_thumbnail = "https://media-cdn.tripadvisor.com/media/photo-s/01/64/a2/f3/simple-but-very-clean.jpg"
 		room_price = "$65,000"
 		room_description = "Habitación sencilla con una cama, TV satelital y baño"
-	}else{
+	} else {
 		room_thumbnail = "http://shoise.com/wp-content/uploads/2017/01/impressive-simple-room-pictures-inside-unique.jpg"
 		room_price = "$130,000"
 		room_description = "Habitación doble con dos camas, TV satelital, sofá, mesa de noche y baño"
@@ -442,7 +485,7 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 	collection.Insert(bson.M{"reserve_id": id_reserva, "_id": id_reserva, "arrive_date": arrive_date, "leave_date": leave_date, "state": "A", "host_id": "0045123", "hotel_id": hotel_id,
 		/*"beds_double": beds_double, "beds_simple": beds_simple,*/ "doc_type": doc_type, "doc_id": doc_id,
 		"email": email, "phone_number": phone_number, "room_id": room_id,
-		"room" : bson.M{  "room_thumbnail": room_thumbnail, "room_price": room_price, "description": room_description, "currency": "COP", "room_type": room_type, "capacity": capacity_number,"beds": bson.M{"simple": beds_simple, "double": beds_double} },
+		"room": bson.M{"room_thumbnail": room_thumbnail, "room_price": room_price, "description": room_description, "currency": "COP", "room_type": room_type, "capacity": capacity_number, "beds": bson.M{"simple": beds_simple, "double": beds_double}},
 	})
 	println("ID reserva generada: " + id_reserva)
 
@@ -460,6 +503,10 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 //http://localhost:8080/api/v1/rooms/arrive_date/01-01-2017/leave_date/02-02-2017/city/05001/hosts/3/room_type/l
 func main() {
 	fmt.Println("start server 8080")
+	firebase.InitializeApp(&firebase.Options{
+		ServiceAccountPath: "firebaseAdminCredentials.json",
+	})
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler).Methods("GET")
 
@@ -469,6 +516,7 @@ func main() {
 	r.HandleFunc("/api/v1/rooms/reserve", getReservationRequest).Methods("POST")
 
 	r.HandleFunc("/api/v1/reservations", getReservations).Methods("GET")
+	r.HandleFunc("/test", ValidateMiddleware(TestEndpoint)).Methods("GET")
 
 	http.Handle("/", r)
 	port := os.Getenv("PORT")
@@ -483,6 +531,6 @@ func main() {
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 	// http.ListenAndServe(":"+port, handlers.CORS(corsObj)(r))
 	http.ListenAndServe(":"+port, handlers.CORS(originsOk, headersOk, methodsOk)(r))
-	
+
 	// http.ListenAndServe(":"+port, nil)
 }
