@@ -111,7 +111,7 @@ func getReservations(w http.ResponseWriter, r *http.Request){
 	}
 
 	//respuesta, err := json.Marshal(resp)
-	respuesta, err := json.Marshal(reservasObj)
+	respuesta, err := json.Marshal(reservasObj[0])
 	longitud := len(reservasObj)
 	fmt.Println(longitud)
 
