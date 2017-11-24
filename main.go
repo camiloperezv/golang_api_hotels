@@ -484,9 +484,10 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 
 	// guardar datos de reserva
 	id_reserva := bson.NewObjectId().Hex()
-	collection.Insert(bson.M{"userId": userId, "_id": id_reserva, "start_date": arrive_date, "end_date": leave_date, "state": "awaiting", "host_id": "0045123", "hotel_id": hotel_id,
-		"room_type": room_type, "capacity": capacity_number, "beds_double": beds_double, "beds_simple": beds_simple, "doc_type": doc_type, "doc_id": doc_id,
-		"email": email, "phone_number": phone_number, "room_id": room_id})
+	collection.Insert(bson.M{"userId": userId, "reserve_id": id_reserva, "_id": id_reserva, "arrive_date": arrive_date, "leave_date": leave_date, "state": "A", "host_id": "0045123", "hotel_id": hotel_id,
+		/*"beds_double": beds_double, "beds_simple": beds_simple,*/ "doc_type": doc_type, "doc_id": doc_id,	"email": email, "phone_number": phone_number, "room_id": room_id,
+		"room" : bson.M{  "room_thumbnail": room_thumbnail, "room_price": room_price, "description": room_description, "currency": "COP", "room_type": room_type, "capacity": capacity_number,"beds": bson.M{"simple": beds_simple, "double": beds_double} },
+	})
 	println("ID reserva generada: " + id_reserva)
 
 	// retornar respuesta de reserva gestionada
