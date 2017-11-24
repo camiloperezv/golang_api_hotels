@@ -462,7 +462,12 @@ func main() {
 		port = "8080"
 	}
 	//http.ListenAndServe("0.0.0.0:"+port, nil)
-	corsObj := handlers.AllowedOrigins([]string{"*"})
-	http.ListenAndServe(":"+port, handlers.CORS(corsObj)(r))
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With"})
+	// originsOk := handlers.AllowedOrigins([]string{os.Getenv("ORIGIN_ALLOWED")})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+	// http.ListenAndServe(":"+port, handlers.CORS(corsObj)(r))
+	http.ListenAndServe(":"+port, handlers.CORS(originsOk, headersOk, methodsOk)(r))
+	
 	// http.ListenAndServe(":"+port, nil)
 }
