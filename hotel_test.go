@@ -136,7 +136,7 @@ func TestHTTP(t *testing.T) {
 	}
 
 	/*var tipo, errtipo = fmt.Printf("%T", raw)
-	var tipo_string = string(tipo)
+	var tipo_string = string(tipo)  
 	var tipo_esperado = "map[string]interface {}"
 	fmt.Println(tipo_string)
 	fmt.Println(errtipo)
@@ -157,6 +157,7 @@ func TestHTTP(t *testing.T) {
 	}
 
 	//fmt.Println(rr.Body.String())
+	
 
 }
 
@@ -182,7 +183,7 @@ func TestFechas(t *testing.T) {
 	// prueba de día
 	fecha_esperada = "05"
 	if dateObj["day"] != fecha_esperada {
-		t.Errorf("Test Fallido: Formato de fecha incorrecto. Día esperado %s y Obtenido %s ", fecha_esperada, dateObj["day"])
+		t.Errorf("Test Fallido: Formato de fecha incorrecto. Dia esperado %s y Obtenido %s ", fecha_esperada, dateObj["day"])
 	}
 }
 
@@ -190,7 +191,7 @@ func TestEstructuras(t *testing.T) {
 	room := Room{Hotel_id: "udeain_medellin", Hotel_name: "Udea IN", Hotel_thumbnail: "N/A", check_in: "11:00 am"}
 
 	if room.Hotel_id != "udeain_medellin" {
-		t.Errorf("Test Fallido: Datos en estructura distintos a los especificados. Esperado %s y Obtenido %s ", room.Hotel_id, "udeain_medellin")
+		t.Errorf("Test Fallido: Datos en estructura distintos  a los especificados. Esperado %s y Obtenido %s ", room.Hotel_id, "udeain_medellin")
 	}
 }
 
@@ -236,6 +237,7 @@ func TestReserva(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	// probar código de respuesta
+
 	if w.Code != 200 {
 		t.Errorf("Test Fallido: Código de respuesta HTTP para reservas erróneo. Esperado: %d y Obtenido: %d ", 200, w.Code)
 	} else {
