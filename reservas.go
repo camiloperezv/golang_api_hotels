@@ -32,7 +32,58 @@ func TestEndpoint(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(decoded)
 }
 
+func deleteReservation(w http.ResponseWriter, r *http.Request, id_reserva string){
+
+	session, err := mgo.Dial("mongodb://udeain:udeainmongodb@ds157444.mlab.com:57444/heroku_4r2js6cs")
+	if err != nil {
+		panic(err)
+	}
+	defer session.Close()
+
+	// Configurar sesión Mongo DB
+	session.SetMode(mgo.Monotonic, true)
+	c := session.DB("heroku_4r2js6cs").C("reservation")
+
+	var reservaObj bson.M
+
+	// Buscar reserva recibida
+	err = c.Find(bson.M{"reserve_id": id_reserva}).One(&reservaObj)
+
+	reserva, err := json.Marshal(reservaObj)
+	
+	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "application/json")
+
+	if (reserva != nil && string(reserva) != "null" ){
+		//w.Write(reserva)
+		// Desactivar reserva
+
+		//c.Update({"reserve_id": id_reserva },{"$set" : {"state": "C"}})
+
+		c.Upsert(
+			bson.M{"reserve_id": id_reserva},
+			bson.M{"$set": bson.M{"state": "C"}},
+		)
+
+		mensaje := "La reserva con identificador " + id_reserva + " fue cancelada exitosamente!!"
+		w.Write([]byte(`{"message" : "` + mensaje + `"}`))
+
+	}else{
+		mensaje := "La reserva con identificador " + id_reserva + " no se encuentra en nuestros registros, intente de nuevo"
+		w.Write([]byte(`{"message" : "` + mensaje + `"}`))
+	}
+
+}
+
 func getReservations(w http.ResponseWriter, r *http.Request) {
+
+	// obtener parámetro de reserva
+	id_reserva := r.URL.Query().Get("reserve_id")
+	//fmt.Println("Reserva "+ id_reserva)
+	if (id_reserva != ""){
+		deleteReservation(w , r , id_reserva)			
+		return	
+	}
 
 	session, err := mgo.Dial("mongodb://udeain:udeainmongodb@ds157444.mlab.com:57444/heroku_4r2js6cs")
 	if err != nil {

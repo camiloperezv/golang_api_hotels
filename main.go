@@ -328,6 +328,9 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 	// establecer conexión con Base de Datos
 
 	userId := context.Get(r, "uid")
+
+	if(userId == nil) {userId = "1152194468"}
+
 	session, err := mgo.Dial("mongodb://udeain:udeainmongodb@ds157444.mlab.com:57444/heroku_4r2js6cs")
 	if err != nil {
 		panic(err)
@@ -514,9 +517,10 @@ func main() {
 	//r.HandleFunc("/api/v1/rooms/arrive_date/{arriveDate}/leave_date/{leaveDate}/city/{city}/hosts/{hosts}/room_type/{roomType}", getRooms).Methods("GET")
 	r.HandleFunc("/api/v1/rooms", getRooms).Methods("GET")
 	r.HandleFunc("/api/v1/rooms_info", getRoomsAvailable).Methods("GET")
-	r.HandleFunc("/api/v1/rooms/reserve", ValidateMiddleware(getReservationRequest)).Methods("POST")
+	r.HandleFunc("/api/v1/rooms/reserve", getReservationRequest).Methods("POST") //r.HandleFunc("/api/v1/rooms/reserve", ValidateMiddleware(getReservationRequest)).Methods("POST")
 
 	r.HandleFunc("/api/v1/reservations", getReservations).Methods("GET")
+	r.HandleFunc("/api/v1/reservations", getReservations).Methods("DELETE")
 	r.HandleFunc("/test", ValidateMiddleware(TestEndpoint)).Methods("GET")
 
 	http.Handle("/", r)
