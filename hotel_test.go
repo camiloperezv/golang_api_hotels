@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	
 )
 
 func checkError(err error, t *testing.T) {
@@ -35,7 +36,7 @@ func Test1(t *testing.T) {
 
 func Test2(t *testing.T) {
 
-	// formato de json enviado por medio de formulario web
+	// formato de json enviado por medio de formulario web. 
 	jsonDatos := []byte(`{"arrive_date":"2017-10-25","leave_date":"2017-10-26","room_type":"s","capacity":1,"beds":{"simple":1,"double":0},"hotel_id":"udeain_medellin",
 		"user":{"doc_type":"CC","doc_id":"11521777","email":"cjmo@gmail.com","phone_number":"4448787"}}`)
 
@@ -56,7 +57,8 @@ func Test2(t *testing.T) {
 	if arrive_date != expected {
 		t.Error("Test Fallido para dato arrive_date")
 	} else {
-		fmt.Println("Test 2.1 de obtención de dato en respuesta aprobado")
+		fmt.Println("Test 2.1 de Obtención de dato en respuesta Aprobado")
+	
 	}
 
 	// prueba de verificación de fechas (que la de llegada sea inferior a la de salida)
@@ -81,6 +83,7 @@ func Test2(t *testing.T) {
 		fmt.Println("Test 2.3 de obtención de dato en respuesta aprobado")
 	}
 
+	
 	// prueba de capacidad de habitación (personas)
 	salida, _ = json.Marshal(raw["capacity"])
 	capacity := string(salida)
