@@ -86,3 +86,5 @@ The Routers from the packages gorilla/mux and gorilla/pat call Clear()
 so if you are using either of them you don't need to clear the context manually.
 */
 package context
+
+
