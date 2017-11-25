@@ -79,6 +79,8 @@ func Test2(t *testing.T) {
 		t.Error("Test Fallido: Tipo de habitación distinta a las soportadas: S y L")
 	} else {
 		fmt.Println("Test 2.3 de obtención de dato en respuesta aprobado")
+		
+		
 	}
 
 	// prueba de capacidad de habitación (personas)
@@ -91,6 +93,7 @@ func Test2(t *testing.T) {
 		t.Error("Test Fallido: La capacidad de la habitación debe ser mínimo de 1 persona")
 	} else {
 		fmt.Println("Test 2.4 de obtención de dato en respuesta aprobado")
+		
 	}
 
 }
@@ -99,6 +102,8 @@ func TestPuerto(t *testing.T) {
 	// prueba de puerto de comunicación
 	puerto := os.Getenv("PORT")
 	fmt.Println("Puerto: " + puerto)
+	
+	
 
 	puerto_esperado := "8080"
 	if puerto != puerto_esperado {
@@ -106,7 +111,9 @@ func TestPuerto(t *testing.T) {
 	}
 }
 
-// pruebas de conexión y respuestas HTTP
+
+// Pruebas de conexión y respuestas HTTP 
+
 func TestHTTP(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	checkError(err, t)
