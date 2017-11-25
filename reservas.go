@@ -11,9 +11,8 @@ import (
 	//"io/ioutil"
 	//"strconv"
 	"github.com/gorilla/context"
-
 	"net/http"
-	// "strings"
+	"strings"
 )
 
 type JwtToken struct {
@@ -58,8 +57,6 @@ func deleteReservation(w http.ResponseWriter, r *http.Request, id_reserva string
 		//w.Write(reserva)
 		// Desactivar reserva
 
-		//c.Update({"reserve_id": id_reserva },{"$set" : {"state": "C"}})
-
 		c.Upsert(
 			bson.M{"reserve_id": id_reserva},
 			bson.M{"$set": bson.M{"state": "C"}},
@@ -99,22 +96,6 @@ func getReservations(w http.ResponseWriter, r *http.Request) {
 
 	err = c.Find(nil).All(&reservasObj)
 
-	////
-	/*collection := session.DB("heroku_4r2js6cs").C("reservation")
-	pipeline := []bson.M{
-		//bson.M{"$match": bson.M{"$or": []bson.M{bson.M{"start_date": bson.M{"$gte": fecha_fin}}, bson.M{"end_date": bson.M{"$lte": fecha_inicio}}}}},
-
-		//Realizar 'Join' con documentos adicionales de hotel y datos de habitaciones//
-		//bson.M{"$lookup": bson.M{"from": "rooms", "localField": "room_id", "foreignField": "id", "as": "rooms"}},
-		bson.M{"$lookup": bson.M{"from": "hotel", "localField": "hotel_id", "foreignField": "hotel_id", "as": "hotel_details"}},
-		// Realizar filtrado por tipo de habitación y ciudad //
-		//{"$unwind": "$rooms"},
-	}
-	pipe := collection.Pipe(pipeline)
-	resp := []bson.M{}
-	err = pipe.All(&resp)*/
-	////
-
 	if err != nil {
 		w.WriteHeader(404)
 		w.Write([]byte("not found"))
@@ -122,72 +103,62 @@ func getReservations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//respuesta, err := json.Marshal(resp)
-	respuesta, err := json.Marshal(reservasObj[0])
-	longitud := len(reservasObj)
-	fmt.Println(longitud)
+	respuesta, err := json.Marshal(reservasObj)
+	longitud := len(reservasObj)	
 
-	headerJsonPadre := []byte(`{"reservations": [`)
-	///
-	var headerJson []byte
-	var cityInfo []byte
-	var jsonEnd []byte
-	var finalRes []byte
-
+	// Decodificar datos de JSON
+	var raw []map[string]interface{}
+	json.Unmarshal(respuesta, &raw)
+		
 	for i := 0; i < longitud; i++ {
-		fmt.Println(i)
-		headerJson = []byte(`{`)
+		// agregar reserva a cada elemento
+		raw[i]["reservation"] = reservasObj[i]
 
-		cityInfo = []byte(`"hotel_id":"udeain_medellin","hotel_name":"udeain Medellín", "hotel_location":{"address":"Cra. 14 #82-2 a 82-98", "lat":"4.667662", "long":"-74.0574518"},"hotel_thumbnail":"https://media-cdn.tripadvisor.com/media/photo-s/06/35/93/c2/hotel-el-deportista.jpg","check_in":"15:00","check_out":"13:00","hotel_website":"https://udeain.herokuapp.com", "reservation":`)
-		headerJson = append(headerJson[:], cityInfo...)
+		// obtener id de hotel
+		salida, _ := json.Marshal(raw[i]["hotel_id"])
+		hotel := string(salida)
+		hotel = strings.Replace(hotel, "\"", "", -1)
+		fmt.Println( hotel )
 
-		jsonEnd = []byte(`}`)
-		if string(respuesta) == "null" {
-			respuesta = []byte(`[]`)
+		// agregar datos adicionales	
+		if (hotel == "udeain_medellin"){
+			raw[i]["hotel_id"] = hotel
+			raw[i]["hotel_name"] = "udeain medellin"
+			raw[i]["hotel_thumbnail"] = "http://www.kohler.com/common/images/global_accounts/Hotel-Indigo-Thumbnail.jpg"
+			raw[i]["hotel_location"] = bson.M{"address":"Cl. 5 Sur #42-2 a 42-70", "lat":"6.1992463", "long":"-75.5747155"}
+			raw[i]["check_in"] = "15:00"
+			raw[i]["check_out"] = "13:00"
+			raw[i]["hotel_website"] = "https://udeain.herokuapp.com"			
+
+		}else if (hotel == "udeain_bogota"){
+			raw[i]["hotel_id"] = hotel
+			raw[i]["hotel_name"] = "udeain bogota"
+			raw[i]["hotel_thumbnail"] = "http://images.citybreakcdn.com/image.aspx?ImageId=329020&width=300&height=300&crop=1"
+			raw[i]["hotel_location"] = bson.M{"address":"Cra. 14 #82-2 a 82-98", "lat":"4.667662", "long":"-74.0574518"}
+			raw[i]["check_in"] = "15:30"
+			raw[i]["check_out"] = "13:30"
+			raw[i]["hotel_website"] = "https://udeain.herokuapp.com"
 		}
-		finalRes = append(headerJson[:], respuesta...)
-		//finalRes := append(headerJson[:], datos[0]...)
-		finalRes = append(finalRes[:], jsonEnd...)
+			
+		// eliminar datos no requeridos
+		delete(raw[i], "_id");
+		delete(raw[i], "doc_id");
+		delete(raw[i], "arrive_date");
+		delete(raw[i], "doc_type");
+		delete(raw[i], "email");
+		delete(raw[i], "host_id");
+		delete(raw[i], "leave_date");
+		delete(raw[i], "reserve_id");
+		delete(raw[i], "room_id");
+		delete(raw[i], "state");
+		delete(raw[i], "userId");		
 	}
-	///
-
-	finalResPadre := append(headerJsonPadre[:], finalRes...)
-	jsonEndPadre := []byte(`]}`)
-	finalResPadre = append(finalResPadre[:], jsonEndPadre...)
-
-	if err != nil {
-		w.WriteHeader(405)
-		w.Write([]byte("unable to get reservations"))
-		return
-	}
-
-	// accesar a datos por índice
-	/*var datos []bson.M
-	err = json.Unmarshal(respuesta, &datos)
-	fmt.Println("DATOS: ", datos[0])
-
-	if err != nil {
-		fmt.Println("error:", err)
-	}*/
-
-	///////////
-	/*headerJson := []byte(`{`)
-
-	cityInfo := []byte(`"reservations": [{ "hotel_id":"udeain_medellin","hotel_name":"udeain Medellín", "hotel_location":{"address":"Cra. 14 #82-2 a 82-98", "lat":"4.667662", "long":"-74.0574518"},"hotel_thumbnail":"https://media-cdn.tripadvisor.com/media/photo-s/06/35/93/c2/hotel-el-deportista.jpg","check_in":"15:00","check_out":"13:00","hotel_website":"https://udeain.herokuapp.com", "reservation":`)
-	headerJson = append(headerJson[:], cityInfo...)
-
-	jsonEnd := []byte(`}]}`)
-	if string(respuesta) == "null" {
-		respuesta = []byte(`[]`)
-	}
-	finalRes := append(headerJson[:], respuesta...)
-	//finalRes := append(headerJson[:], datos[0]...)
-	finalRes = append(finalRes[:], jsonEnd...)*/
-	///////////
+	
+	
+	// actualizar datos de respuesta
+	respuesta, err = json.Marshal(raw)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
-	//w.Write(respuesta)
-	//w.Write(finalRes)
-	//w.Write(finalRes)
-	w.Write(finalResPadre)
+	w.Write(respuesta)
 }

@@ -69,7 +69,7 @@ func ValidateMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				// println("found", found)
 				if err == nil {
 					uid, found := decodedToken.UID()
-					// println("uid", uid)
+					//println("uid", uid)
 					println("found", found)
 					// context.Set(req, "decoded", uid)
 					context.Set(req, "decoded", uid)
@@ -327,7 +327,7 @@ func getReservationRequest(w http.ResponseWriter, r *http.Request) {
 
 	// establecer conexión con Base de Datos
 
-	userId := context.Get(r, "uid")
+	userId := context.Get(r, "decoded")
 
 	if(userId == nil) {userId = "1152194468"}
 
@@ -517,10 +517,16 @@ func main() {
 	//r.HandleFunc("/api/v1/rooms/arrive_date/{arriveDate}/leave_date/{leaveDate}/city/{city}/hosts/{hosts}/room_type/{roomType}", getRooms).Methods("GET")
 	r.HandleFunc("/api/v1/rooms", getRooms).Methods("GET")
 	r.HandleFunc("/api/v1/rooms_info", getRoomsAvailable).Methods("GET")
-	r.HandleFunc("/api/v1/rooms/reserve", getReservationRequest).Methods("POST") //r.HandleFunc("/api/v1/rooms/reserve", ValidateMiddleware(getReservationRequest)).Methods("POST")
 
+	r.HandleFunc("/api/v1/rooms/reserve", ValidateMiddleware(getReservationRequest)).Methods("POST")
+	r.HandleFunc("/api/v1/reservations", ValidateMiddleware(getReservations)).Methods("GET")
+	r.HandleFunc("/api/v1/reservations",ValidateMiddleware(getReservations)).Methods("DELETE")
+
+	/*r.HandleFunc("/api/v1/rooms/reserve", getReservationRequest).Methods("POST") 
 	r.HandleFunc("/api/v1/reservations", getReservations).Methods("GET")
-	r.HandleFunc("/api/v1/reservations", getReservations).Methods("DELETE")
+	r.HandleFunc("/api/v1/reservations",getReservations).Methods("DELETE")*/
+	
+
 	r.HandleFunc("/test", ValidateMiddleware(TestEndpoint)).Methods("GET")
 
 	http.Handle("/", r)
